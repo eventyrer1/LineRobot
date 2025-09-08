@@ -44,6 +44,7 @@ void setup()
   Serial.begin(9600);
   Serial.println("Calibration done. Starting line following...");
 }
+//funksjon for å sette motorfarten, tar inn negativ for bakover, positiv tall for forover. forventet verdier mellom -255 og 255
 void setMotorSpeeds(int leftSpeed, int rightSpeed) {
   // Left motor
   if (leftSpeed >= 0) {
@@ -83,7 +84,7 @@ void loop()
       break;
     }
   }
-
+  //finner tilbake til linjen basert på kva siden den mista den på
   if (!lineDetected) {
   Serial.println("⚠️ Line lost! Recovering...");
   if (lastError < 0) {
@@ -97,7 +98,7 @@ void loop()
   return;
   }
 
-  // PD control
+  // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
   int error = (int)position - 2500; // center = 2500
   int derivative = error - lastError;
   int correction = Kp * error + Kd * derivative;
@@ -114,7 +115,7 @@ void loop()
 
   setMotorSpeeds(leftSpeed, rightSpeed);
 
-  // --- Debug output ---
+  // --- Debug output --- Kun visuelt
   Serial.print("Sensors: ");
   for (int i = 0; i < NUM_SENSORS; i++) {
     Serial.print(sensorValues[i]); Serial.print(" ");
