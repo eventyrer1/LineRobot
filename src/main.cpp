@@ -135,7 +135,7 @@ void loop() {
     Serial.print(correction);
     Serial.print(" | L: ");
     Serial.print(leftSpeed);
-    Serial.print(" R: ");
+    Serial.print(" | R: ");
     Serial.println(rightSpeed);
 
     lastError = error;
