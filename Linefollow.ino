@@ -1,8 +1,8 @@
-#include <ZumoReflectanceSensorArray.h>
+#include "ZumoShield/ZumoReflectanceSensorArray.h"
 
 // --- Sensor setup ---
 #define NUM_SENSORS 6
-ZumoReflectanceSensorArray reflectanceSensors;
+//ZumoReflectanceSensorArray reflectanceSensors;
 unsigned int sensorValues[NUM_SENSORS];
 
 // --- SparkFun TB6612FNG motor driver pins ---
