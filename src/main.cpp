@@ -48,7 +48,6 @@ void setup() {
     Serial.begin(9600);
     Serial.println("Calibration done. Starting line following...");
 }
-
 //funksjon for å sette motorfarten, tar inn negativ for bakover, positiv tall for forover. forventet verdier mellom -255 og 255
 void setMotorSpeeds(int leftSpeed, int rightSpeed) {
     // Left motor
@@ -76,19 +75,8 @@ void setMotorSpeeds(int leftSpeed, int rightSpeed) {
     analogWrite(PWMB, rightSpeed);
 }
 
-void loop() {
-    // read calibrated line position (0–5000)
-    int position = reflectanceSensors.readLine(sensorValues); //was unsigned, may need to put in again after test.
-
-    // detect if line is lost (all sensors white)
-    bool lineDetected = false;
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        if (sensorValues[i] > 800) {
-            // threshold for black
-            lineDetected = true;
-            break;
-        }
-    }
+//funksjon for å finne linjen igjen
+void findLine(bool lineDetected, int lastError, int recovery) {
     //finner tilbake til linjen basert på kva siden den mista den på
     if (!lineDetected) {
         Serial.println("⚠️ Line lost! Recovering...");
@@ -102,29 +90,10 @@ void loop() {
         delay(50);
         return;
     }
+}
 
-    // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
-    int error = (int) position - 2500; // center = 2500
-    int derivative = error - lastError;
-    int correction = Kp * error + Kd * derivative;
-
-    int leftSpeed = baseSpeed - (correction / 3);
-    int rightSpeed = baseSpeed + (correction / 3);
-
-    if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
-    if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
-    if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
-    if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
-
-
-    setMotorSpeeds(leftSpeed, rightSpeed);
-
-    // --- Debug output --- Kun visuelt
-    Serial.print("Sensors: ");
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        Serial.print(sensorValues[i]);
-        Serial.print(" ");
-    }
+// samler alle print kommandoene i en funksjon for å rydde opp i koden
+void printInfo(int position, int error, int derivative, int correction, int leftSpeed, int rightSpeed) {
     Serial.print(" | Pos: ");
     Serial.print(position);
     Serial.print(" | Err: ");
@@ -139,5 +108,44 @@ void loop() {
     Serial.println(rightSpeed);
 
     lastError = error;
+}
+
+void loop() {
+    // read calibrated line position (0–5000)
+    int position = reflectanceSensors.readLine(sensorValues); //was unsigned, may need to put in again after test.
+
+    // detect if line is lost (all sensors white)
+    bool lineDetected = false;
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (sensorValues[i] > 800) {
+            // threshold for black
+            lineDetected = true;
+            break;
+        }
+    }
+    findLine(lineDetected, lastError, recovery);
+
+    // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
+    int error = (int) position - 2500; // center = 2500
+    int derivative = error - lastError;
+    int correction = Kp * error + Kd * derivative;
+
+    int leftSpeed = baseSpeed - (correction / 3);
+    int rightSpeed = baseSpeed + (correction / 3);
+
+    if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
+    if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
+    if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
+    if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
+
+    setMotorSpeeds(leftSpeed, rightSpeed);
+
+    // --- Debug output --- Kun visuelt
+    Serial.print("Sensors: ");
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        Serial.print(sensorValues[i]);
+        Serial.print(" ");
+    }
+    printInfo(position, error, derivative, correction, leftSpeed, rightSpeed);
     delay(50); // adjust for how fast you want updates
 }
