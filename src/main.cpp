@@ -109,7 +109,7 @@ void loop() {
             setMotorSpeeds(-recovery, recovery); // spin right
             Serial.println("Recovering RIGHT");
         }
-        delay(50);
+        //delay(25);
         return;
     }
 
@@ -118,8 +118,8 @@ void loop() {
     int derivative = error - lastError;
     int correction = Kp * error + Kd * derivative;
 
-    int leftSpeed = baseSpeed - (correction/4 );
-    int rightSpeed = baseSpeed + (correction/4 );
+    int leftSpeed = baseSpeed - (correction/5 );
+    int rightSpeed = baseSpeed + (correction/5 );
 
     if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
     if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
@@ -148,5 +148,5 @@ void loop() {
     Serial.println(rightSpeed);
 
     lastError = error;
-    delay(50); // adjust for how fast you want updates
+    delay(25); // adjust for how fast you want updates
 }
