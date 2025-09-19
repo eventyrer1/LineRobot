@@ -126,8 +126,6 @@ void loop() {
     if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
     if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
 
-
-
     setMotorSpeeds(leftSpeed, rightSpeed);
 
     // --- Debug output --- Kun visuelt
