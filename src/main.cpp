@@ -2,19 +2,9 @@
 #include <ZumoReflectanceSensorArray.h>
 
 // --- Sensor setup ---
-ZumoReflectanceSensorArray reflectanceSensors;
 #define NUM_SENSORS 6
-
-unsigned char sensorPins[] = {4, A3, 11, A0, A2, 5};
-// unsigned char numSensors = 6; // Remove this line
+ZumoReflectanceSensorArray reflectanceSensors;
 unsigned int sensorValues[NUM_SENSORS];
-
-//unsigned char numSensors = 6;
-
-unsigned int timeout = 3000; // Increase this value for higher sensor mounting
-unsigned char emitterPin = 2;
-
-//unsigned int sensorValues[NUM_SENSORS];
 
 // --- SparkFun TB6612FNG motor driver pins ---
 const int AIN1 = 7; // Left motor IN1
@@ -28,9 +18,9 @@ const int PWMB = 10; // Right motor PWM
 // --- PD control parameters ---
 float Kp = 0.1; //weight form error
 float Kd = 0.1; //weight from difference in error
-int baseSpeed = 125;
-int maxSpeed = 255;
-int recovery = 100;
+int baseSpeed = 75;
+int maxSpeed = 150;
+int recovery = 50;
 
 int lastError = 0;
 
@@ -91,14 +81,15 @@ void loop() {
     int position = reflectanceSensors.readLine(sensorValues); //was unsigned, may need to put in again after test.
 
     // detect if line is lost (all sensors white)
-    bool lineDetected = true;
+    bool lineDetected = false;
     for (int i = 0; i < NUM_SENSORS; i++) {
-        if (sensorValues[i] < 500 and (position == 0 or position == 5000)) {
+        if (sensorValues[i] > 800) {
             // threshold for black
-            lineDetected = false;
+            lineDetected = true;
             break;
         }
     }
+    /*
     //finner tilbake til linjen basert på kva siden den mista den på
     if (!lineDetected) {
         Serial.println("⚠️ Line lost! Recovering...");
@@ -109,22 +100,23 @@ void loop() {
             setMotorSpeeds(-recovery, recovery); // spin right
             Serial.println("Recovering RIGHT");
         }
-        //delay(25);
+        delay(50);
         return;
     }
-
+*/
     // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
     int error = (int) position - 2500; // center = 2500
     int derivative = error - lastError;
     int correction = Kp * error + Kd * derivative;
 
-    int leftSpeed = baseSpeed - (correction/5 );
-    int rightSpeed = baseSpeed + (correction/5 );
+    int leftSpeed = baseSpeed - (correction / 4);
+    int rightSpeed = baseSpeed + (correction / 4);
 
     if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
     if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
     if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
     if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
+
 
     setMotorSpeeds(leftSpeed, rightSpeed);
 
@@ -148,5 +140,5 @@ void loop() {
     Serial.println(rightSpeed);
 
     lastError = error;
-    delay(25); // adjust for how fast you want updates
+    delay(50); // adjust for how fast you want updates
 }
