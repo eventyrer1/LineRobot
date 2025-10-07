@@ -1,6 +1,7 @@
 #include <arduino.h>
 #include <ZumoReflectanceSensorArray.h>
 
+
 // --- Sensor setup ---
 #define NUM_SENSORS 6
 ZumoReflectanceSensorArray reflectanceSensors;
@@ -16,17 +17,34 @@ const int BIN2 = 12; // Right motor IN2
 const int PWMB = 10; // Right motor PWM
 
 // --- PD control parameters ---
-float Kp = 0.1; //weight form error
-float Kd = 0.1; //weight from difference in error
-int baseSpeed = 75;
-int maxSpeed = 150;
-int recovery = 50;
+
+float kp_e(int err){
+    if (err > 2000 || err < -2000){
+        return 0.25;
+        }
+    else{
+        return 0.1;
+    }
+
+}
+
+
+//float Kp = 0.2; //weight form error
+float Kd = 0.2; //weight from difference in error
+int baseSpeed = 120;
+int maxSpeed = baseSpeed*2;
+
+int diff = 0;
+
+
 
 int lastError = 0;
 
 void setup() {
     reflectanceSensors.init();
-
+    if (maxSpeed > 255){
+    maxSpeed = 255;
+    }
     // Motor pins
     pinMode(AIN1, OUTPUT);
     pinMode(AIN2, OUTPUT);
@@ -80,46 +98,37 @@ void loop() {
     // read calibrated line position (0–5000)
     int position = reflectanceSensors.readLine(sensorValues); //was unsigned, may need to put in again after test.
 
-    // detect if line is lost (all sensors white)
-    bool lineDetected = false;
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        if (sensorValues[i] > 800) {
-            // threshold for black
-            lineDetected = true;
-            break;
-        }
-    }
-    /*
-    //finner tilbake til linjen basert på kva siden den mista den på
-    if (!lineDetected) {
-        Serial.println("⚠️ Line lost! Recovering...");
-        if (lastError < 0) {
-            setMotorSpeeds(recovery, -recovery); // spin left
-            Serial.println("Recovering LEFT");
-        } else {
-            setMotorSpeeds(-recovery, recovery); // spin right
-            Serial.println("Recovering RIGHT");
-        }
-        delay(50);
-        return;
-    }
-*/
+
     // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
     int error = (int) position - 2500; // center = 2500
     int derivative = error - lastError;
-    int correction = Kp * error + Kd * derivative;
+    int correction = kp_e(error) * error + Kd * derivative;
 
-    int leftSpeed = baseSpeed - (correction / 4);
-    int rightSpeed = baseSpeed + (correction / 4);
+    int leftSpeed = baseSpeed - (correction / 3);
+    int rightSpeed = baseSpeed + (correction / 3);
 
     if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
     if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
     if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
     if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
 
+    if(error<0){
+        diff = -error;
+    }
+    else{
+        diff = error;
+    }
+
+    if (diff < 500) { //justerer farten når den er nær midten
+        leftSpeed = baseSpeed;
+        rightSpeed = baseSpeed;
+    }
 
     setMotorSpeeds(leftSpeed, rightSpeed);
 
+    bool consoleOutput = false; //Bytt til false for å skru av output, burde være av ved konkuranse
+
+    if (consoleOutput) {
     // --- Debug output --- Kun visuelt
     Serial.print("Sensors: ");
     for (int i = 0; i < NUM_SENSORS; i++) {
@@ -138,6 +147,7 @@ void loop() {
     Serial.print(leftSpeed);
     Serial.print(" | R: ");
     Serial.println(rightSpeed);
+    }
 
     lastError = error;
     delay(50); // adjust for how fast you want updates
