@@ -20,18 +20,26 @@ const int PWMB = 10; // Right motor PWM
 
 float kp_e(int err){
     if (err > 2000 || err < -2000){
-        return 0.25;
+        return 0.21;
         }
     else{
         return 0.1;
     }
 
 }
+float kd_e(int diff){
+    if (diff > 2000 || diff < -2000){
+        return 0.25;
+        }
+    else{
+        return 0.17;
+    }
+}
 
 
 //float Kp = 0.2; //weight form error
-float Kd = 0.2; //weight from difference in error
-int baseSpeed = 120;
+//float Kd = 0.22; //weight from difference in error
+int baseSpeed = 110;
 int maxSpeed = baseSpeed*2;
 
 int diff = 0;
@@ -102,7 +110,7 @@ void loop() {
     // Logisk kontroll for hvordan/hvor mye den skal svinge baser på senor input
     int error = (int) position - 2500; // center = 2500
     int derivative = error - lastError;
-    int correction = kp_e(error) * error + Kd * derivative;
+    int correction = kp_e(error) * error + kd_e(derivative) * derivative;
 
     int leftSpeed = baseSpeed - (correction / 3);
     int rightSpeed = baseSpeed + (correction / 3);
